@@ -3,6 +3,8 @@ import { createUser } from "../controllers/userController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { roleMiddleware } from "../middleware/roleMiddleware";
 import { getUsers } from "../controllers/userController";
+import { updateUserStatus } from "../controllers/userController";
+import { updateUser } from "../controllers/userController";
 
 const router = Router();
 
@@ -18,6 +20,22 @@ router.get(
   authMiddleware,
   roleMiddleware("ADMIN"),
   getUsers
+);
+
+
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  updateUserStatus
+);
+
+
+router.patch(
+  "/:id",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  updateUser
 );
 
 export default router;

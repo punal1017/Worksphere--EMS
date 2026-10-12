@@ -72,3 +72,105 @@ export const getUsers = async (req: any, res: any) => {
     });
   }
 };
+
+
+export const updateUserStatus = async (req: any, res: any) => {
+  try {
+    const userId = Number(req.params.id);
+    const { status } = req.body;
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    if (!["ACTIVE", "INACTIVE"].includes(status)) {
+      return res.status(400).json({
+        message: "Status must be ACTIVE or INACTIVE",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { status },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    return res.json({
+      message: "User status updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to update user status",
+    });
+  }
+};
+
+
+export const updateUser = async (req: any, res: any) => {
+  try {
+    const userId = Number(req.params.id);
+    const { name, email, role } = req.body;
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    if (!["HR", "EMPLOYEE"].includes(role)) {
+      return res.status(400).json({
+        message: "Role must be HR or EMPLOYEE",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (existingUser.role === "ADMIN") {
+      return res.status(403).json({
+        message: "Admin account cannot be edited through this API",
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { name, email, role },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    return res.json({
+      message: "User updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to update user",
+    });
+  }
+};
