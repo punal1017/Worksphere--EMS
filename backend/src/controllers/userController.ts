@@ -173,4 +173,39 @@ export const updateUser = async (req: any, res: any) => {
       message: "Failed to update user",
     });
   }
+};  
+
+export const deleteUser = async (req: any, res: any) => {
+  try {
+    const userId = Number(req.params.id);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.role === "ADMIN") {
+      return res.status(403).json({
+        message: "Admin account cannot be deleted",
+      });
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to delete user",
+    });
+  }
 };

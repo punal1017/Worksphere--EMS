@@ -5,6 +5,7 @@ import { roleMiddleware } from "../middleware/roleMiddleware";
 import { getUsers } from "../controllers/userController";
 import { updateUserStatus } from "../controllers/userController";
 import { updateUser } from "../controllers/userController";
+import { deleteUser } from "../controllers/userController";
 
 const router = Router();
 
@@ -37,5 +38,15 @@ router.patch(
   roleMiddleware("ADMIN"),
   updateUser
 );
+
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  deleteUser
+);
+
+
 
 export default router;
