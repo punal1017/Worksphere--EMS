@@ -4,6 +4,7 @@ const app = express();
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import attendanceRoutes from "./routes/attendanceRoutes";
+import leaveRoutes from "./routes/leaveRoutes";
 app.use(express.json());
 
 app.get("/", async (req, res) => {
@@ -24,6 +25,7 @@ app.get("/", async (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/leaves", leaveRoutes);
 
 const PORT = 5000;
 
