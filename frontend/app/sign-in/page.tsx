@@ -14,6 +14,7 @@ import {
   IconButton,
   InputAdornment,
   Stack,
+  Snackbar,
   TextField,
   Typography,
 } from '@mui/material';
@@ -39,14 +40,34 @@ export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    setError('');
+  const showSnackbar = (
+    message: string,
+    severity: 'success' | 'error' = 'error',
+  ) => {
+    setSnackbar({ open: true, message, severity });
+  };
 
-    if (!email.trim() || !password) {
-      setError('Please enter both email and password.');
+  const handleLogin = async () => {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail || !password) {
+      showSnackbar('Please enter both email and password.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      showSnackbar('Invalid email.');
       return;
     }
 
@@ -56,7 +77,7 @@ export default function SignInPage() {
       const response = await axios.post<LoginResponse>(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/login`,
         {
-          email: email.trim(),
+          email: normalizedEmail,
           password,
         }
       );
@@ -66,14 +87,15 @@ export default function SignInPage() {
       localStorage.setItem('accessToken', token);
       localStorage.setItem('currentUser', JSON.stringify(user));
 
-      router.push('/dashboard');
+      showSnackbar('Logged in successfully.', 'success');
+      setTimeout(() => router.push('/dashboard'), 800);
     } catch (error) {
       const message = axios.isAxiosError(error)
         ? error.response?.data?.message
         : undefined;
-      setError(
+      showSnackbar(
         message ||
-          'Login failed. Please check your credentials or backend server.'
+          'Login failed. Please check your credentials or backend server.',
       );
     } finally {
       setLoading(false);
@@ -89,41 +111,63 @@ export default function SignInPage() {
         flexDirection: 'column',
       }}
     >
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        anchorOrigin={{ vertical:'top', horizontal: 'right' }}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        sx={{ mt: 8 }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
       {/* Header */}
       <Box
         sx={{
-          bgcolor: 'white',
+          bgcolor: '#ffffff',
           borderBottom: '1px solid #e2e8f0',
-          py: 2,
         }}
       >
-        <Container maxWidth="lg">
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Stack direction="row" spacing={1} alignItems="center">
-              <GroupsRoundedIcon
-                sx={{ fontSize: 34, color: '#2563eb' }}
-              />
-              <Typography
-                variant="h5"
-                fontWeight={800}
-                color="#0f172a"
-              >
-                WorkSphere
-              </Typography>
-            </Stack>
-
-            <Button
-              startIcon={<ArrowBackRoundedIcon />}
-              onClick={() => router.push('/')}
-              sx={{ textTransform: 'none' }}
+        <Container
+          maxWidth="lg"
+          sx={{
+            minHeight: 76,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <GroupsRoundedIcon
+              sx={{ fontSize: 36, color: '#2563eb' }}
+            />
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, color: '#0f172a' }}
             >
-              Back to Home
-            </Button>
+              WorkSphere
+            </Typography>
           </Stack>
+
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackRoundedIcon />}
+            onClick={() => router.push('/')}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+            }}
+          >
+            Back to Home
+          </Button>
         </Container>
       </Box>
 
@@ -180,14 +224,9 @@ export default function SignInPage() {
             </Typography>
           </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
           <Box
             component="form"
+            noValidate
             onSubmit={(event) => {
               event.preventDefault();
               handleLogin();

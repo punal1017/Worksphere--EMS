@@ -4,15 +4,24 @@ import prisma from "../config/prisma";
 
 export const login = async (req: any, res: any) => {
   try {
-    const { email, password } = req.body;
+    const email = typeof req.body.email === "string"
+      ? req.body.email.trim()
+      : "";
+    const { password } = req.body;
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        message: "Invalid email",
+      });
+    }
 
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
+      return res.status(404).json({
+        message: "User not in database",
       });
     }
 

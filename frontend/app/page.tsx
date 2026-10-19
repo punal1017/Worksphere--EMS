@@ -44,7 +44,7 @@ export default function Home() {
             gap: 2,
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack component="div" direction="row" spacing={1} alignItems="center">
             <GroupsRoundedIcon
               sx={{ fontSize: 36, color: '#2563eb' }}
             />
@@ -58,10 +58,14 @@ export default function Home() {
 
           <Button
             variant="outlined"
-            onClick={() => router.push('/signIn')}
-            sx={{ borderRadius: 2, px: 3 }}
+            onClick={() => router.push('/sign-in')}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+            }}
           >
-            Sign in
+            Sign In
           </Button>
         </Container>
       </Box>
@@ -139,7 +143,7 @@ export default function Home() {
               variant="contained"
               size="large"
               endIcon={<ArrowForwardRoundedIcon />}
-              onClick={() => router.push('/signIn')}
+              onClick={() => router.push('/sign-in')}
               sx={{
                 mt: 4,
                 px: 4,

@@ -42,14 +42,14 @@
 
 //   useEffect(() => {
 //     if (!user) {
-//       router.replace('/signIn');
+//       router.replace('/sign-in');
 //     }
 //   }, [router, user]);
 
 //   const handleSignOut = () => {
 //     localStorage.removeItem('accessToken');
 //     localStorage.removeItem('currentUser');
-//     router.replace('/signIn');
+//     router.replace('/sign-in');
 //   };
 
 //   if (!user) {
@@ -114,7 +114,6 @@ import { useRouter } from 'next/navigation';
 
 import {
   Alert,
-  AppBar,
   Avatar,
   Box,
   Button,
@@ -123,7 +122,6 @@ import {
   CircularProgress,
   Container,
   Stack,
-  Toolbar,
   Typography,
 } from '@mui/material';
 
@@ -151,7 +149,7 @@ export default function DashboardPage() {
     const savedUser = localStorage.getItem('currentUser');
 
     if (!token || !savedUser) {
-      router.replace('/signIn');
+      router.replace('/sign-in');
       return;
     }
 
@@ -161,7 +159,7 @@ export default function DashboardPage() {
       if (!parsedUser.name || !parsedUser.role) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('currentUser');
-        router.replace('/signIn');
+        router.replace('/sign-in');
         return;
       }
 
@@ -169,7 +167,7 @@ export default function DashboardPage() {
     } catch {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('currentUser');
-      router.replace('/signIn');
+      router.replace('/sign-in');
     } finally {
       setCheckingLogin(false);
     }
@@ -179,7 +177,7 @@ export default function DashboardPage() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('currentUser');
 
-    router.replace('/signIn');
+    router.replace('/sign-in');
   };
 
   if (checkingLogin || !user) {
@@ -209,56 +207,64 @@ export default function DashboardPage() {
       description: 'Manage employee information and team members.',
       icon: <PeopleAltRoundedIcon />,
       roles: ['ADMIN', 'HR'],
+      route: '/employees',
     },
     {
       title: 'Attendance',
       description: 'Track your daily check-in and check-out.',
       icon: <AccessTimeRoundedIcon />,
       roles: ['ADMIN', 'HR', 'EMPLOYEE'],
+      route: undefined,
     },
     {
       title: 'Leave Management',
       description: 'Apply for leave and review leave requests.',
       icon: <EventAvailableRoundedIcon />,
       roles: ['ADMIN', 'HR', 'EMPLOYEE'],
+      route: undefined,
     },
   ];
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc' }}>
       {/* Navbar */}
-      <AppBar
-        position="static"
-        elevation={0}
+      <Box
+        component="header"
         sx={{
           bgcolor: 'white',
-          color: '#0f172a',
           borderBottom: '1px solid #e2e8f0',
         }}
       >
-        <Container maxWidth="lg">
-          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <GroupsRoundedIcon
-                sx={{ fontSize: 34, color: '#2563eb' }}
-              />
-
-              <Typography variant="h5" fontWeight={800}>
-                WorkSphere
-              </Typography>
-            </Stack>
-
-            <Button
-              color="inherit"
-              startIcon={<LogoutRoundedIcon />}
-              onClick={handleLogout}
-              sx={{ textTransform: 'none' }}
+        <Container
+          maxWidth="lg"
+          sx={{
+            minHeight: 76,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <GroupsRoundedIcon sx={{ fontSize: 36, color: '#2563eb' }} />
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, color: '#0f172a' }}
             >
-              Logout
-            </Button>
-          </Toolbar>
+              WorkSphere
+            </Typography>
+          </Stack>
+
+          <Button
+            variant="outlined"
+            startIcon={<LogoutRoundedIcon />}
+            onClick={handleLogout}
+            sx={{ borderRadius: 2, px: 3, textTransform: 'none' }}
+          >
+            Sign out
+          </Button>
         </Container>
-      </AppBar>
+      </Box>
 
       {/* Main content */}
       <Container maxWidth="lg" sx={{ py: 5 }}>
@@ -316,7 +322,7 @@ export default function DashboardPage() {
           Your Workspace
         </Typography>
 
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
+        <Typography color="text.secondary" sx={{ mb: 3 , color: '#475569' }}>
           Here is an overview of the features available to your role.
         </Typography>
 
@@ -343,10 +349,25 @@ export default function DashboardPage() {
               <Card
                 key={card.title}
                 elevation={0}
+                onClick={
+                  card.route ? () => router.push(card.route) : undefined
+                }
+                onKeyDown={
+                  card.route
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          router.push(card.route);
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={card.route ? 0 : undefined}
                 sx={{
                   border: '1px solid #e2e8f0',
                   borderRadius: 3,
                   transition: '0.2s',
+                  cursor: card.route ? 'pointer' : 'default',
                   '&:hover': {
                     borderColor: '#93c5fd',
                     transform: 'translateY(-3px)',
