@@ -3,7 +3,15 @@ import prisma from "../config/prisma";
 
 export const createUser = async (req: any, res: any) => {
   try {
-    const { name, email, password, role } = req.body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      dateOfBirth,
+      address,
+      phoneNumber,
+    } = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -16,6 +24,11 @@ export const createUser = async (req: any, res: any) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const parsedDate = dateOfBirth ? new Date(dateOfBirth) : null;
+
+    if (parsedDate && Number.isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date of birth" });
+    }
 
     const user = await prisma.user.create({
       data: {
@@ -23,6 +36,12 @@ export const createUser = async (req: any, res: any) => {
         email,
         password: hashedPassword,
         role,
+        dateOfBirth: parsedDate,
+        address: typeof address === "string" && address.trim() ? address.trim() : null,
+        phoneNumber:
+          typeof phoneNumber === "string" && phoneNumber.trim()
+            ? phoneNumber.trim()
+            : null,
       },
     });
 
@@ -55,6 +74,9 @@ export const getUsers = async (req: any, res: any) => {
         role: true,
         status: true,
         createdAt: true,
+        dateOfBirth: true,
+        address: true,
+        phoneNumber: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -125,7 +147,7 @@ export const updateUserStatus = async (req: any, res: any) => {
 export const updateUser = async (req: any, res: any) => {
   try {
     const userId = Number(req.params.id);
-    const { name, email, role } = req.body;
+    const { name, email, role, dateOfBirth, address, phoneNumber } = req.body;
 
     if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(400).json({ message: "Invalid user ID" });
@@ -151,15 +173,33 @@ export const updateUser = async (req: any, res: any) => {
       });
     }
 
+    const parsedDate = dateOfBirth ? new Date(dateOfBirth) : null;
+    if (parsedDate && Number.isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date of birth" });
+    }
+
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { name, email, role },
+      data: {
+        name,
+        email,
+        role,
+        dateOfBirth: parsedDate,
+        address: typeof address === "string" && address.trim() ? address.trim() : null,
+        phoneNumber:
+          typeof phoneNumber === "string" && phoneNumber.trim()
+            ? phoneNumber.trim()
+            : null,
+      },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         status: true,
+        dateOfBirth: true,
+        address: true,
+        phoneNumber: true,
       },
     });
 

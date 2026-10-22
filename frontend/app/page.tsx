@@ -65,7 +65,7 @@ export default function Home() {
               textTransform: 'none',
             }}
           >
-            Sign In
+            Sign in
           </Button>
         </Container>
       </Box>
@@ -155,7 +155,7 @@ export default function Home() {
                 boxShadow: '0 8px 20px rgba(37, 99, 235, 0.2)',
               }}
             >
-              Get Started
+              Get started
             </Button>
 
             <Typography

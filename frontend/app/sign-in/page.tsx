@@ -21,7 +21,6 @@ import {
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
-import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import axios from 'axios';
 
 type LoginResponse = {
@@ -144,7 +143,22 @@ export default function SignInPage() {
             gap: 2,
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            onClick={() => router.push('/')}
+            role="button"
+            tabIndex={0}
+            aria-label="Go to home"
+            sx={{ cursor: 'pointer' }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                router.push('/');
+              }
+            }}
+          >
             <GroupsRoundedIcon
               sx={{ fontSize: 36, color: '#2563eb' }}
             />
@@ -156,18 +170,6 @@ export default function SignInPage() {
             </Typography>
           </Stack>
 
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackRoundedIcon />}
-            onClick={() => router.push('/')}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-              textTransform: 'none',
-            }}
-          >
-            Back to Home
-          </Button>
         </Container>
       </Box>
 
@@ -296,7 +298,7 @@ export default function SignInPage() {
                 {loading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  'Sign In'
+                  'Sign in'
                 )}
               </Button>
             </Stack>

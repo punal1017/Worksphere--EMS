@@ -725,13 +725,11 @@ import {
   Add,
   Edit,
   Delete,
-  Refresh,
   Person,
   ArrowBack,
 } from '@mui/icons-material';
-import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import { useRouter } from 'next/navigation';
+import AppSidebar from '../../components/AppSidebar';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -742,6 +740,9 @@ type User = {
   role: 'ADMIN' | 'HR' | 'EMPLOYEE';
   status: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;
+  dateOfBirth?: string | null;
+  address?: string | null;
+  phoneNumber?: string | null;
 };
 
 type FormData = {
@@ -749,6 +750,9 @@ type FormData = {
   email: string;
   password: string;
   role: 'HR' | 'EMPLOYEE';
+  dateOfBirth: string;
+  address: string;
+  phoneNumber: string;
 };
 
 type SortField = 'name' | 'email' | 'role' | 'status' | 'createdAt';
@@ -770,6 +774,9 @@ export default function EmployeesPage() {
     email: '',
     password: '',
     role: 'EMPLOYEE',
+    dateOfBirth: '',
+    address: '',
+    phoneNumber: '',
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -810,12 +817,6 @@ export default function EmployeesPage() {
 
     return sortOrder === 'asc' ? comparison : -comparison;
   });
-
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('currentUser');
-    router.replace('/sign-in');
-  };
 
   // JWT headers for protected API requests.
   const getHeaders = () => {
@@ -909,6 +910,9 @@ export default function EmployeesPage() {
       email: user.email,
       password: '',
       role: user.role === 'HR' ? 'HR' : 'EMPLOYEE',
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
+      address: user.address || '',
+      phoneNumber: user.phoneNumber || '',
     });
 
     setFormOpen(true);
@@ -935,6 +939,9 @@ export default function EmployeesPage() {
             name: form.name.trim(),
             email: form.email.trim(),
             role: form.role,
+            dateOfBirth: form.dateOfBirth || null,
+            address: form.address,
+            phoneNumber: form.phoneNumber,
           },
           { headers: getHeaders() },
         );
@@ -948,6 +955,9 @@ export default function EmployeesPage() {
             email: form.email.trim(),
             password: form.password,
             role: form.role,
+            dateOfBirth: form.dateOfBirth || null,
+            address: form.address,
+            phoneNumber: form.phoneNumber,
           },
           { headers: getHeaders() },
         );
@@ -1025,26 +1035,30 @@ export default function EmployeesPage() {
 
   if (!isAdmin) {
     return (
-      <Container maxWidth="md" sx={{ py: 8 }}>
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 5 }}>
-            <Typography variant="h5" gutterBottom>
-              Access Restricted
-            </Typography>
-
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              Only Admin can access Employee Management.
-            </Typography>
-
-            <Button
-              variant="contained"
-              onClick={() => router.push('/dashboard')}
-            >
-              Back to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </Container>
+      <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#f8fafc' }}>
+        <AppSidebar />
+        <Box sx={{ flex: 1, py: 8 }}>
+          <Container maxWidth="md">
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                <Typography variant="h5" gutterBottom>
+                  Access Restricted
+                </Typography>
+                <Typography color="text.secondary" sx={{ mb: 3 }}>
+                  Only Admin can access Employee Management.
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => router.push('/dashboard')}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Back to dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </Container>
+        </Box>
+      </Box>
     );
   }
 
@@ -1069,47 +1083,9 @@ export default function EmployeesPage() {
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc' }}>
-      {/* Header */}
-      <Box
-        component="header"
-        sx={{
-          bgcolor: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
-        }}
-      >
-        <Container
-          maxWidth="lg"
-          sx={{
-            minHeight: 76,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 2,
-          }}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <GroupsRoundedIcon sx={{ fontSize: 36, color: '#2563eb' }} />
-
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 800, color: '#0f172a' }}
-            >
-              WorkSphere
-            </Typography>
-          </Stack>
-
-          <Button
-            variant="outlined"
-            startIcon={<LogoutRoundedIcon />}
-            onClick={handleLogout}
-            sx={{ borderRadius: 2, px: 3, textTransform: 'none' }}
-          >
-            Sign out
-          </Button>
-        </Container>
-      </Box>
-
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', display: 'flex' }}>
+      <AppSidebar />
+      <Box sx={{ flex: 1 }}>
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Page title and actions */}
         <Stack
@@ -1119,13 +1095,15 @@ export default function EmployeesPage() {
           sx={{
             mb: 4,
             alignItems: { xs: 'stretch', sm: 'center' },
+            width: '100%',
+            position: 'relative',
           }}
         >
           <Box>
             <Button
               startIcon={<ArrowBack />}
               onClick={() => router.push('/dashboard')}
-              sx={{ mb: 1 }}
+              sx={{ mb: 1, textTransform: 'none' }}
             >
               Dashboard
             </Button>
@@ -1145,15 +1123,27 @@ export default function EmployeesPage() {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1}>
-            
-
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              width: { xs: '100%', sm: 'auto' },
+              position: { xs: 'static', sm: 'absolute' },
+              right: { sm: 0 },
+              top: { sm: '50%' },
+              transform: { sm: 'translateY(-50%)' },
+            }}
+          >
             <Button
               variant="contained"
               startIcon={<Add />}
               onClick={openCreateForm}
+              sx={{
+                ml: { xs: 'auto', sm: 0 },
+                textTransform: 'none',
+              }}
             >
-              Add User
+              Add user
             </Button>
           </Stack>
         </Stack>
@@ -1222,7 +1212,7 @@ export default function EmployeesPage() {
                 color="text.secondary"
                 sx={{ py: 4, textAlign: 'center' }}
               >
-                No users found. Click Add User to create an account.
+                No users found. Click Add user to create an account.
               </Typography>
             ) : (
               <TableContainer sx={{ overflowX: 'auto' }}>
@@ -1243,6 +1233,9 @@ export default function EmployeesPage() {
                         </TableCell>
                       ))}
 
+                      <TableCell>Phone</TableCell>
+                      <TableCell>Date of birth</TableCell>
+                      <TableCell>Address</TableCell>
                       <TableCell align="left">
                         Actions
                       </TableCell>
@@ -1292,6 +1285,18 @@ export default function EmployeesPage() {
                             : '—'}
                         </TableCell>
 
+                        <TableCell>{user.phoneNumber || '—'}</TableCell>
+
+                        <TableCell>
+                          {user.dateOfBirth
+                            ? new Date(user.dateOfBirth).toLocaleDateString()
+                            : '—'}
+                        </TableCell>
+
+                        <TableCell sx={{ minWidth: 180 }}>
+                          {user.address || '—'}
+                        </TableCell>
+
                         <TableCell align="right">
                           {user.role !== 'ADMIN' && (
                             <Stack
@@ -1318,6 +1323,7 @@ export default function EmployeesPage() {
                                 onClick={() =>
                                   void handleToggleStatus(user)
                                 }
+                                sx={{ textTransform: 'none' }}
                               >
                                 {user.status === 'ACTIVE'
                                   ? 'Deactivate'
@@ -1357,13 +1363,13 @@ export default function EmployeesPage() {
         maxWidth="sm"
       >
         <DialogTitle>
-          {editingUser ? 'Edit User' : 'Create New User'}
+          {editingUser ? 'Edit user' : 'Create new user'}
         </DialogTitle>
 
         <DialogContent>
           <Stack spacing={2.5} sx={{ pt: 1 }}>
             <TextField
-              label="Full Name"
+              label="Full name"
               fullWidth
               value={form.name}
               onChange={(event) =>
@@ -1373,7 +1379,7 @@ export default function EmployeesPage() {
             />
 
             <TextField
-              label="Email Address"
+              label="Email address"
               type="email"
               fullWidth
               value={form.email}
@@ -1385,7 +1391,7 @@ export default function EmployeesPage() {
 
             {!editingUser && (
               <TextField
-                label="Temporary Password"
+                label="Temporary password"
                 type="password"
                 fullWidth
                 value={form.password}
@@ -1412,6 +1418,37 @@ export default function EmployeesPage() {
               <MenuItem value="EMPLOYEE">Employee</MenuItem>
               <MenuItem value="HR">HR</MenuItem>
             </TextField>
+
+            <TextField
+              label="Date of birth"
+              type="date"
+              fullWidth
+              value={form.dateOfBirth}
+              onChange={(event) =>
+                setForm({ ...form, dateOfBirth: event.target.value })
+              }
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
+            <TextField
+              label="Address"
+              fullWidth
+              multiline
+              minRows={2}
+              value={form.address}
+              onChange={(event) =>
+                setForm({ ...form, address: event.target.value })
+              }
+            />
+
+            <TextField
+              label="Phone number"
+              fullWidth
+              value={form.phoneNumber}
+              onChange={(event) =>
+                setForm({ ...form, phoneNumber: event.target.value })
+              }
+            />
           </Stack>
         </DialogContent>
 
@@ -1422,6 +1459,7 @@ export default function EmployeesPage() {
               resetForm();
             }}
             disabled={saving}
+            sx={{ textTransform: 'none' }}
           >
             Cancel
           </Button>
@@ -1430,13 +1468,14 @@ export default function EmployeesPage() {
             variant="contained"
             onClick={() => void handleSaveUser()}
             disabled={saving}
+            sx={{ textTransform: 'none' }}
           >
             {saving ? (
               <CircularProgress size={22} color="inherit" />
             ) : editingUser ? (
-              'Save Changes'
+              'Save changes'
             ) : (
-              'Create User'
+              'Create user'
             )}
           </Button>
         </DialogActions>
@@ -1457,6 +1496,7 @@ export default function EmployeesPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </Box>
   );
 }

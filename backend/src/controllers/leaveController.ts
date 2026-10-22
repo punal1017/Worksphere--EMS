@@ -36,6 +36,7 @@ export const applyLeave = async (req: any, res: any) => {
         startDate: start,
         endDate: end,
         reason,
+        status: req.user.role === "HR" ? "PENDING_ADMIN" : "PENDING_HR",
       },
     });
 
@@ -107,11 +108,49 @@ export const getPendingLeavesForHR = async (req: any, res: any) => {
   }
 };
 
+export const getPendingLeavesForAdmin = async (req: any, res: any) => {
+  try {
+    const leaves = await prisma.leave.findMany({
+      where: {
+        status: "PENDING_ADMIN",
+        requester: {
+          role: {
+            in: ["EMPLOYEE", "HR"],
+          },
+        },
+      },
+      include: {
+        requester: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      message: "Pending leaves fetched successfully",
+      leaves,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to fetch pending leaves",
+    });
+  }
+};
 
 export const reviewLeaveByHR = async (req: any, res: any) => {
   try {
     const { id } = req.params;
     const { action } = req.body;
+    const leaveId = Number(id);
 
     if (!["APPROVE", "REJECT"].includes(action)) {
       return res.status(400).json({
@@ -119,8 +158,14 @@ export const reviewLeaveByHR = async (req: any, res: any) => {
       });
     }
 
+    if (!Number.isInteger(leaveId) || leaveId <= 0) {
+      return res.status(400).json({
+        message: "Invalid leave ID",
+      });
+    }
+
     const leave = await prisma.leave.findUnique({
-      where: { id: Number(id) },
+      where: { id: leaveId },
       include: {
         requester: {
           select: { role: true },
@@ -145,7 +190,7 @@ export const reviewLeaveByHR = async (req: any, res: any) => {
     }
 
     const updatedLeave = await prisma.leave.update({
-      where: { id: Number(id) },
+      where: { id: leaveId },
       data: {
         status: action === "APPROVE" ? "PENDING_ADMIN" : "HR_REJECTED",
         hrApprovedBy: req.user.userId,
@@ -172,6 +217,7 @@ export const reviewLeaveByAdmin = async (req: any, res: any) => {
   try {
     const { id } = req.params;
     const { action } = req.body;
+    const leaveId = Number(id);
 
     if (!["APPROVE", "REJECT"].includes(action)) {
       return res.status(400).json({
@@ -179,8 +225,14 @@ export const reviewLeaveByAdmin = async (req: any, res: any) => {
       });
     }
 
+    if (!Number.isInteger(leaveId) || leaveId <= 0) {
+      return res.status(400).json({
+        message: "Invalid leave ID",
+      });
+    }
+
     const leave = await prisma.leave.findUnique({
-      where: { id: Number(id) },
+      where: { id: leaveId },
       include: {
         requester: {
           select: { role: true },
@@ -205,7 +257,7 @@ export const reviewLeaveByAdmin = async (req: any, res: any) => {
     // HR's own leave goes directly to Admin
     if (
       leave.requester.role === "HR" &&
-      leave.status !== "PENDING_HR"
+      leave.status !== "PENDING_ADMIN"
     ) {
       return res.status(400).json({
         message: "This HR leave has already been reviewed",
@@ -219,7 +271,7 @@ export const reviewLeaveByAdmin = async (req: any, res: any) => {
     }
 
     const updatedLeave = await prisma.leave.update({
-      where: { id: Number(id) },
+      where: { id: leaveId },
       data: {
         status: action === "APPROVE" ? "APPROVED" : "ADMIN_REJECTED",
         adminApprovedBy: req.user.userId,
