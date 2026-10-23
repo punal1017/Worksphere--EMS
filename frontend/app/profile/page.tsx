@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import AppSidebar from "../../components/AppSidebar";
+import { useProtectedRoute } from "../../components/ProtectedRoute";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -50,6 +51,7 @@ const formatDate = (value: string | null) => {
 };
 
 export default function ProfilePage() {
+  useProtectedRoute();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<ProfileForm>({
     name: "",
@@ -61,6 +63,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -131,6 +134,8 @@ export default function ProfilePage() {
       }
 
       setEditing(false);
+      setError("");
+      setSuccessMessage("Changes saved successfully");
     } catch (requestError) {
       const message = axios.isAxiosError(requestError)
         ? requestError.response?.data?.message
@@ -249,6 +254,21 @@ export default function ProfilePage() {
       <Snackbar open={Boolean(error)} autoHideDuration={5000} onClose={() => setError("")}>
         <Alert severity="error" onClose={() => setError("")}>
           {error}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={Boolean(successMessage)}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage("")}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        sx={{ mt: 8, zIndex: 1500 }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setSuccessMessage("")}
+        >
+          {successMessage}
         </Alert>
       </Snackbar>
     </Box>

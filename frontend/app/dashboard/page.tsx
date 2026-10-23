@@ -1025,11 +1025,15 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import axios from "axios";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
   ButtonBase,
+  Card,
+  CardContent,
   CircularProgress,
   Divider,
   Drawer,
@@ -1039,9 +1043,18 @@ import {
   ListItemIcon,
   ListItemText,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+} from "recharts";
 
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
@@ -1052,6 +1065,7 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import { useProtectedRoute } from "../../components/ProtectedRoute";
 
 type Role = "ADMIN" | "HR" | "EMPLOYEE";
 
@@ -1064,6 +1078,35 @@ type User = {
 
 const SIDEBAR_WIDTH = 250;
 const COLLAPSED_WIDTH = 76;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
+
+type AttendanceSummary = {
+  date: string;
+  scope: "COMPANY" | "PERSONAL";
+  total: number;
+  present: number;
+  absent: number;
+  onLeave: number;
+  breakdown: {
+    PRESENT: number;
+    ABSENT: number;
+    ON_LEAVE: number;
+  };
+};
+
+const attendanceColors = {
+  PRESENT: "#16a34a",
+  ABSENT: "#ef4444",
+  ON_LEAVE: "#f59e0b",
+};
+
+const getLocalDateValue = () => {
+  const date = new Date();
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+};
 
 const navigationItems = [
   {
@@ -1093,6 +1136,7 @@ const navigationItems = [
 ];
 
 export default function DashboardPage() {
+  useProtectedRoute();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -1100,6 +1144,11 @@ export default function DashboardPage() {
   const [checkingLogin, setCheckingLogin] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(getLocalDateValue);
+  const [attendanceSummary, setAttendanceSummary] =
+    useState<AttendanceSummary | null>(null);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [attendanceError, setAttendanceError] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -1133,6 +1182,49 @@ export default function DashboardPage() {
       setCheckingLogin(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const fetchAttendanceSummary = async () => {
+      setAttendanceLoading(true);
+      setAttendanceError("");
+
+      try {
+        const token = localStorage.getItem("accessToken");
+        const response = await axios.get<AttendanceSummary>(
+          `${API_URL}/attendance/dashboard-summary`,
+          {
+            params: { date: selectedDate },
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setAttendanceSummary(response.data);
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 401) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("currentUser");
+            router.replace("/sign-in");
+            return;
+          }
+          setAttendanceError(
+            error.response?.data?.message ||
+              "Could not load attendance summary.",
+          );
+        } else {
+          setAttendanceError("Could not load attendance summary.");
+        }
+        setAttendanceSummary(null);
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    void fetchAttendanceSummary();
+  }, [router, selectedDate, user]);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -1459,7 +1551,7 @@ export default function DashboardPage() {
         {renderSidebar(false, true)}
       </Drawer>
 
-      {/* Main dashboard: welcome card only */}
+      {/* Main dashboard */}
       <Box
         component="main"
         sx={{
@@ -1493,21 +1585,20 @@ export default function DashboardPage() {
           <MenuRoundedIcon />
         </IconButton>
 
-        <Box
-          sx={{
-            width: "100%",
-            maxWidth: 1100,
-            mt: { xs: 7, md: 0 },
-            p: { xs: 3, md: 5 },
-            borderRadius: 4,
-            color: "#fff",
-            background:
-              "linear-gradient(135deg, #1e3a8a, #4056c9 65%, #6366f1)",
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: "0 12px 32px rgba(64, 86, 201, 0.12)",
-          }}
-        >
+        <Stack spacing={3} sx={{ width: "100%", maxWidth: 1100, mt: { xs: 7, md: 0 } }}>
+          <Box
+            sx={{
+              width: "100%",
+              p: { xs: 3, md: 5 },
+              borderRadius: 4,
+              color: "#fff",
+              background:
+                "linear-gradient(135deg, #1e3a8a, #4056c9 65%, #6366f1)",
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: "0 12px 32px rgba(64, 86, 201, 0.12)",
+            }}
+          >
           {/* Decorative background circle */}
           <Box
             sx={{
@@ -1522,12 +1613,12 @@ export default function DashboardPage() {
             }}
           />
 
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2.5}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            sx={{ position: "relative" }}
-          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2.5}
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              sx={{ position: "relative" }}
+            >
             <Avatar
               sx={{
                 width: 68,
@@ -1557,8 +1648,131 @@ export default function DashboardPage() {
                 {user.email}
               </Typography>
             </Box>
-          </Stack>
-        </Box>
+            </Stack>
+          </Box>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 3,
+              alignItems: "stretch",
+            }}
+          >
+            <Card elevation={0} sx={{ border: "1px solid #e5eaf2", borderRadius: 3 }}>
+              <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "stretch", sm: "center" }}
+                  spacing={2}
+                  sx={{ mb: 2 }}
+                >
+                  <Box>
+                    <Typography variant="h6" fontWeight={800} color="#172554">
+                      Attendance Overview
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {attendanceSummary?.scope === "PERSONAL"
+                        ? "Your attendance for the selected date"
+                        : "Company attendance for the selected date"}
+                    </Typography>
+                  </Box>
+                  <TextField
+                    type="date"
+                    label="Date"
+                    size="small"
+                    value={selectedDate}
+                    onChange={(event) => setSelectedDate(event.target.value)}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    sx={{ minWidth: { sm: 155 } }}
+                  />
+                </Stack>
+
+                {attendanceLoading ? (
+                  <Box sx={{ display: "grid", placeItems: "center", minHeight: 260 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : attendanceError ? (
+                  <Alert severity="error">{attendanceError}</Alert>
+                ) : attendanceSummary?.total ? (
+                  <>
+                    <Box sx={{ width: "100%", height: 250 }}>
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: "Present", value: attendanceSummary.present, key: "PRESENT" },
+                              { name: "Absent", value: attendanceSummary.absent, key: "ABSENT" },
+                              { name: "On leave", value: attendanceSummary.onLeave, key: "ON_LEAVE" },
+                            ]}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={58}
+                            outerRadius={88}
+                            paddingAngle={2}
+                          >
+                            {(["PRESENT", "ABSENT", "ON_LEAVE"] as const).map((key) => (
+                              <Cell key={key} fill={attendanceColors[key]} />
+                            ))}
+                          </Pie>
+                          <ChartTooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Box>
+                    <Stack spacing={1} sx={{ mt: 1 }}>
+                      {[
+                        ["PRESENT", "Present", attendanceSummary.present],
+                        ["ABSENT", "Absent", attendanceSummary.absent],
+                        ["ON_LEAVE", "On leave", attendanceSummary.onLeave],
+                      ].map(([key, label, value]) => (
+                        <Stack
+                          key={key}
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                        >
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                bgcolor: attendanceColors[key as keyof typeof attendanceColors],
+                              }}
+                            />
+                            <Typography variant="body2">{label}</Typography>
+                          </Stack>
+                          <Typography variant="body2" fontWeight={700}>
+                            {value} ({Math.round((Number(value) / attendanceSummary.total) * 100)}%)
+                          </Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  </>
+                ) : (
+                  <Box sx={{ display: "grid", placeItems: "center", minHeight: 260 }}>
+                    <Typography color="text.secondary">
+                      No active attendance data for {selectedDate}.
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card elevation={0} sx={{ border: "1px solid #e5eaf2", borderRadius: 3 }}>
+              <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                <Typography variant="h6" fontWeight={800} color="#172554">
+                  HR Posts
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 1 }}>
+                  Company updates and announcements will appear here.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        </Stack>
       </Box>
     </Box>
   );

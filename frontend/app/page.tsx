@@ -254,7 +254,7 @@ function FeatureCard({
         {icon}
       </Box>
 
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
+      <Typography variant="h6" fontWeight={700} sx={{ mb: 1,color: '#0f172a' }}>
         {title}
       </Typography>
 

@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
 import prisma from "../config/prisma";
 
+const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 export const createUser = async (req: any, res: any) => {
   try {
     const {
@@ -20,6 +22,13 @@ export const createUser = async (req: any, res: any) => {
     if (existingUser) {
       return res.status(400).json({
         message: "User already exists",
+      });
+    }
+
+    if (typeof password !== "string" || !passwordPattern.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character",
       });
     }
 

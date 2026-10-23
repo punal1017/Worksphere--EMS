@@ -29,6 +29,14 @@ model User {
   leaves              Leave[] @relation("LeaveRequester")
   hrApprovedLeaves    Leave[] @relation("HRApprover")
   adminApprovedLeaves Leave[] @relation("AdminApprover")
+
+
+    resetTokenHash   String?   @unique
+  resetTokenExpiry DateTime?
+
+  dateOfBirth DateTime?
+  address     String?
+  phoneNumber String?
 }
 
 model Attendance {

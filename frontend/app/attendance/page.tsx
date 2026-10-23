@@ -519,6 +519,7 @@ import {
   History,
 } from '@mui/icons-material';
 import AppSidebar from '../../components/AppSidebar';
+import { useProtectedRoute } from '../../components/ProtectedRoute';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -540,7 +541,13 @@ type Message = {
   severity: 'success' | 'error';
 };
 
+function formatBadgeLabel(value: string) {
+  const label = value.replaceAll('_', ' ').toLowerCase();
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export default function AttendancePage() {
+  useProtectedRoute();
   const router = useRouter();
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -848,10 +855,10 @@ export default function AttendancePage() {
                   sx={{ mt: 1.5, fontWeight: 600 }}
                   label={
                     todayCheckedIn
-                      ? 'Currently Checked In'
+                      ? 'Currently checked in'
                       : todayRecord && getCheckOut(todayRecord)
                         ? 'Attendance completed'
-                        : 'Not Checked In'
+                        : 'Not checked in'
                   }
                   color={
                     todayCheckedIn
@@ -1037,7 +1044,7 @@ export default function AttendancePage() {
                           <TableCell>
                             <Chip
                               size="small"
-                              label={status}
+                              label={formatBadgeLabel(status)}
                               color={
                                 checkOut
                                   ? 'success'

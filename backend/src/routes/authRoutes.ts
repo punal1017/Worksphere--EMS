@@ -13,13 +13,15 @@
 
 
 import { Router } from "express";
-import { login } from "../controllers/authController";
+import { forgotPassword, login, resetPassword } from "../controllers/authController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { getProfile, updateProfile } from "../controllers/authController";
 
 const router = Router();
 
 router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router.get("/profile", authMiddleware, getProfile);
 router.patch("/profile", authMiddleware, updateProfile);
 

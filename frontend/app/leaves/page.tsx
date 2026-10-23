@@ -43,6 +43,7 @@ ThumbDownOutlined,
 ThumbUpOutlined,
 } from "@mui/icons-material";
 import AppSidebar from "../../components/AppSidebar";
+import { useProtectedRoute } from "../../components/ProtectedRoute";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -132,13 +133,12 @@ return "default";
 }
 
 function statusLabel(status: string) {
-return (status || "UNKNOWN")
-.replaceAll("_", " ")
-.toLowerCase()
-.replace(/\b\w/g, (letter) => letter.toUpperCase());
+const label = (status || "UNKNOWN").replaceAll("_", " ").toLowerCase();
+return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 export default function LeavesPage() {
+useProtectedRoute();
 const [user, setUser] = useState<CurrentUser | null>(null);
 const [myLeaves, setMyLeaves] = useState<LeaveRecord[]>([]);
 const [pendingLeaves, setPendingLeaves] = useState<LeaveRecord[]>([]);

@@ -1,8 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import {
   Alert,
@@ -35,6 +36,12 @@ type LoginResponse = {
 
 export default function SignInPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    if (localStorage.getItem('accessToken')) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -301,6 +308,16 @@ export default function SignInPage() {
                   'Sign in'
                 )}
               </Button>
+
+              <Typography
+                component={Link}
+                href="/forgot-password"
+                variant="body2"
+                color="primary"
+                sx={{ textAlign: 'center', textDecoration: 'none', fontWeight: 600 }}
+              >
+                Forgot Password?
+              </Typography>
             </Stack>
           </Box>
 

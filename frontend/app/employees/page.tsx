@@ -730,6 +730,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import AppSidebar from '../../components/AppSidebar';
+import { useProtectedRoute } from '../../components/ProtectedRoute';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -758,7 +759,13 @@ type FormData = {
 type SortField = 'name' | 'email' | 'role' | 'status' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
+function formatBadgeLabel(value: string) {
+  const label = value.replaceAll('_', ' ').toLowerCase();
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export default function EmployeesPage() {
+  useProtectedRoute({ allowedRoles: ['ADMIN'] });
   const router = useRouter();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -926,6 +933,19 @@ export default function EmployeesPage() {
 
     if (!editingUser && !form.password.trim()) {
       showMessage('Please enter a password for the new account', 'error');
+      return;
+    }
+
+    if (
+      !editingUser &&
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(
+        form.password,
+      )
+    ) {
+      showMessage(
+        'Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character',
+        'error',
+      );
       return;
     }
 
@@ -1256,7 +1276,7 @@ export default function EmployeesPage() {
                         <TableCell>
                           <Chip
                             size="small"
-                            label={user.role}
+                            label={formatBadgeLabel(user.role)}
                             color={
                               user.role === 'ADMIN'
                                 ? 'secondary'
@@ -1270,7 +1290,7 @@ export default function EmployeesPage() {
                         <TableCell>
                           <Chip
                             size="small"
-                            label={user.status}
+                            label={formatBadgeLabel(user.status)}
                             color={
                               user.status === 'ACTIVE'
                                 ? 'success'
@@ -1398,7 +1418,7 @@ export default function EmployeesPage() {
                 onChange={(event) =>
                   setForm({ ...form, password: event.target.value })
                 }
-                helperText="Share the login credentials securely with the new user."
+                helperText="Use at least 8 characters with uppercase, lowercase, a number, and a special character."
                 required
               />
             )}
