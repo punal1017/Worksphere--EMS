@@ -1057,7 +1057,6 @@ import {
 } from "recharts";
 
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
-import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
@@ -1114,12 +1113,6 @@ const navigationItems = [
     icon: <DashboardRoundedIcon />,
     route: "/dashboard",
     roles: ["ADMIN", "HR", "EMPLOYEE"],
-  },
-  {
-    title: "Team Management",
-    icon: <PeopleAltRoundedIcon />,
-    route: "/employees",
-    roles: ["ADMIN", "HR"],
   },
   {
     title: "Attendance",

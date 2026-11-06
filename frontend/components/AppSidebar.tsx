@@ -20,7 +20,6 @@ import {
 } from "@mui/material";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
-import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
@@ -33,7 +32,6 @@ const COLLAPSED_WIDTH = 76;
 
 const navigationItems = [
   { title: "Dashboard", route: "/dashboard", icon: <DashboardRoundedIcon />, roles: ["ADMIN", "HR", "EMPLOYEE"] },
-  { title: "Team Management", route: "/employees", icon: <PeopleAltRoundedIcon />, roles: ["ADMIN", "HR"] },
   { title: "Attendance", route: "/attendance", icon: <AccessTimeRoundedIcon />, roles: ["ADMIN", "HR", "EMPLOYEE"] },
   { title: "Leave Management", route: "/leaves", icon: <EventAvailableRoundedIcon />, roles: ["ADMIN", "HR", "EMPLOYEE"] },
 ];

@@ -532,6 +532,17 @@ type AttendanceRecord = {
   date?: string;
   status?: string;
   totalHours?: number | null;
+  firstCheckIn?: string | null;
+  lastCheckOut?: string | null;
+  grossDurationMinutes?: number;
+  breakDurationMinutes?: number;
+  netWorkingMinutes?: number;
+  currentStatus?: string;
+  sessions?: Array<{
+    id: number;
+    checkIn: string;
+    checkOut?: string | null;
+  }>;
   [key: string]: unknown;
 };
 
@@ -559,6 +570,7 @@ export default function AttendancePage() {
     text: '',
     severity: 'success',
   });
+  const [, setClock] = useState(() => Date.now());
 
   const getHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -609,6 +621,11 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 60000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -686,12 +703,20 @@ export default function AttendancePage() {
   };
 
   const getCheckIn = (record: AttendanceRecord) =>
-    record.checkIn ?? record.checkInTime ?? null;
+    record.firstCheckIn ?? record.checkIn ?? record.checkInTime ?? null;
 
   const getCheckOut = (record: AttendanceRecord) =>
-    record.checkOut ?? record.checkOutTime ?? null;
+    record.lastCheckOut ?? record.checkOut ?? record.checkOutTime ?? null;
+
+  const formatMinutes = (minutes?: number) => {
+    if (typeof minutes !== 'number' || !Number.isFinite(minutes)) return '—';
+    return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  };
 
   const calculateHours = (record: AttendanceRecord) => {
+    if (typeof record.netWorkingMinutes === 'number') {
+      return formatMinutes(record.netWorkingMinutes);
+    }
     if (typeof record.totalHours === 'number') {
       return `${record.totalHours.toFixed(2)} hrs`;
     }
@@ -709,18 +734,27 @@ export default function AttendancePage() {
     return `${(difference / (1000 * 60 * 60)).toFixed(2)} hrs`;
   };
 
-  const today = new Date().toDateString();
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+  }).format(new Date());
 
   const todayRecord = records.find((record) => {
     const checkIn = getCheckIn(record);
     const dateValue = record.date ?? checkIn;
 
-    return dateValue && new Date(dateValue).toDateString() === today;
+    return (
+      dateValue &&
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+      }).format(new Date(dateValue)) === today
+    );
   });
 
-  const todayCheckedIn = Boolean(
-    todayRecord && getCheckIn(todayRecord) && !getCheckOut(todayRecord),
-  );
+  const todayStatus = todayRecord?.currentStatus;
+  const todayCheckedIn = todayStatus === 'WORKING' ||
+    Boolean(todayRecord && getCheckIn(todayRecord) && !getCheckOut(todayRecord));
+  const todayOnBreak = todayStatus === 'ON_BREAK' ||
+    Boolean(todayRecord && getCheckIn(todayRecord) && getCheckOut(todayRecord));
 
   const buttonSx = {
     px: 2.5,
@@ -855,16 +889,16 @@ export default function AttendancePage() {
                   sx={{ mt: 1.5, fontWeight: 600 }}
                   label={
                     todayCheckedIn
-                      ? 'Currently checked in'
-                      : todayRecord && getCheckOut(todayRecord)
-                        ? 'Attendance completed'
+                      ? 'Currently working'
+                      : todayOnBreak
+                        ? 'On break'
                         : 'Not checked in'
                   }
                   color={
                     todayCheckedIn
                       ? 'success'
-                      : todayRecord && getCheckOut(todayRecord)
-                        ? 'info'
+                      : todayOnBreak
+                        ? 'warning'
                         : 'default'
                   }
                 />
@@ -992,7 +1026,7 @@ export default function AttendancePage() {
                         'Date',
                         'Check in',
                         'Check out',
-                        'Total hours',
+                        'Gross / break / net',
                         'Status',
                       ].map((heading) => (
                         <TableCell
@@ -1017,11 +1051,9 @@ export default function AttendancePage() {
 
                       const status =
                         record.status ??
-                        (checkOut
-                          ? 'COMPLETED'
-                          : checkIn
-                            ? 'IN PROGRESS'
-                            : '—');
+                        record.currentStatus ??
+                        record.status ??
+                        (checkOut ? 'ON_BREAK' : checkIn ? 'WORKING' : '—');
 
                       return (
                         <TableRow key={record.id} hover>
@@ -1038,7 +1070,20 @@ export default function AttendancePage() {
                           </TableCell>
 
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                            {calculateHours(record)}
+                            <Stack spacing={0.25}>
+                              <Typography variant="body2">
+                                Gross:{' '}
+                                {typeof record.grossDurationMinutes === 'number'
+                                  ? formatMinutes(record.grossDurationMinutes)
+                                  : calculateHours(record)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Break: {formatMinutes(record.breakDurationMinutes)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Net: {formatMinutes(record.netWorkingMinutes)}
+                              </Typography>
+                            </Stack>
                           </TableCell>
 
                           <TableCell>
@@ -1046,11 +1091,13 @@ export default function AttendancePage() {
                               size="small"
                               label={formatBadgeLabel(status)}
                               color={
-                                checkOut
-                                  ? 'success'
-                                  : checkIn
-                                    ? 'warning'
-                                    : 'default'
+                                status === 'WORKING'
+                                  ? 'warning'
+                                  : status === 'ON_BREAK'
+                                    ? 'info'
+                                    : status === 'NOT_CHECKED_IN'
+                                      ? 'default'
+                                      : 'success'
                               }
                               sx={{ fontWeight: 600 }}
                             />
