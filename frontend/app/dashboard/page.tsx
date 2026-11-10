@@ -1067,11 +1067,13 @@ type User = {
   name: string;
   email: string;
   role: Role;
+  profilePicture?: string | null;
 };
 
 const SIDEBAR_WIDTH = 250;
 const COLLAPSED_WIDTH = 76;
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 type AttendanceSummary = {
   date: string;
@@ -1163,6 +1165,19 @@ export default function DashboardPage() {
       setCheckingLogin(false);
     }
   }, [router]);
+
+  useEffect(() => {
+    const refreshUser = () => {
+      try {
+        setUser(JSON.parse(localStorage.getItem("currentUser") || "{}") as User);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener("worksphere-profile-updated", refreshUser);
+    return () => window.removeEventListener("worksphere-profile-updated", refreshUser);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -1431,6 +1446,7 @@ export default function DashboardPage() {
             justifyContent={collapsed ? "center" : "flex-start"}
           >
           <Avatar
+            src={user.profilePicture ? `${BACKEND_URL}${user.profilePicture}` : undefined}
             sx={{
               width: 38,
               height: 38,
@@ -1439,7 +1455,7 @@ export default function DashboardPage() {
               fontWeight: 700,
             }}
           >
-            {user.name.charAt(0).toUpperCase()}
+            {!user.profilePicture && user.name.charAt(0).toUpperCase()}
           </Avatar>
 
           {!collapsed && (

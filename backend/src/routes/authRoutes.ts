@@ -16,6 +16,7 @@ import { Router } from "express";
 import { forgotPassword, login, resetPassword } from "../controllers/authController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { getProfile, updateProfile } from "../controllers/authController";
+import { uploadProfilePicture } from "../middleware/uploadMiddleware";
 
 const router = Router();
 
@@ -23,6 +24,11 @@ router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/profile", authMiddleware, getProfile);
-router.patch("/profile", authMiddleware, updateProfile);
+router.patch(
+  "/profile",
+  authMiddleware,
+  uploadProfilePicture,
+  updateProfile,
+);
 
 export default router;

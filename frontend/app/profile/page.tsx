@@ -17,11 +17,13 @@ import {
   Typography,
 } from "@mui/material";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import CameraAltRoundedIcon from "@mui/icons-material/CameraAltRounded";
 import AppSidebar from "../../components/AppSidebar";
 import { useProtectedRoute } from "../../components/ProtectedRoute";
 import CalendarDateField from "../../components/CalendarDateField";
 
 const API_URL = "http://localhost:5000/api";
+const BACKEND_URL = API_URL.replace(/\/api$/, "");
 
 type Profile = {
   name: string;
@@ -30,6 +32,7 @@ type Profile = {
   dateOfBirth: string | null;
   address: string | null;
   phoneNumber: string | null;
+  profilePicture: string | null;
 };
 
 type ProfileForm = {
@@ -65,6 +68,18 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [selectedProfilePicture, setSelectedProfilePicture] = useState<File | null>(null);
+  const [picturePreview, setPicturePreview] = useState("");
+
+  useEffect(() => {
+    if (!selectedProfilePicture) {
+      setPicturePreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(selectedProfilePicture);
+    setPicturePreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedProfilePicture]);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -88,6 +103,7 @@ export default function ProfilePage() {
           address: user.address || "",
           phoneNumber: user.phoneNumber || "",
         });
+        setSelectedProfilePicture(null);
       } catch (requestError) {
         const message = axios.isAxiosError(requestError)
           ? requestError.response?.data?.message
@@ -110,9 +126,18 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("dateOfBirth", form.dateOfBirth);
+      formData.append("address", form.address);
+      formData.append("phoneNumber", form.phoneNumber);
+      if (selectedProfilePicture) {
+        formData.append("profilePicture", selectedProfilePicture);
+      }
+
       const response = await axios.patch<{ user: Profile }>(
         `${API_URL}/auth/profile`,
-        form,
+        formData,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const user = response.data.user;
@@ -123,13 +148,19 @@ export default function ProfilePage() {
         address: user.address || "",
         phoneNumber: user.phoneNumber || "",
       });
+      setSelectedProfilePicture(null);
 
       try {
         const storedUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
         localStorage.setItem(
           "currentUser",
-          JSON.stringify({ ...storedUser, name: user.name }),
+          JSON.stringify({
+            ...storedUser,
+            name: user.name,
+            profilePicture: user.profilePicture,
+          }),
         );
+        window.dispatchEvent(new Event("worksphere-profile-updated"));
       } catch {
         // The server update succeeded; cached sidebar data can refresh at next login.
       }
@@ -153,8 +184,11 @@ export default function ProfilePage() {
       <Box sx={{ flex: 1, py: { xs: 3, md: 5 } }}>
         <Container maxWidth="md">
           <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 4 }}>
-            <Avatar sx={{ bgcolor: "#e8edff", color: "#4056c9", width: 48, height: 48 }}>
-              <PersonRoundedIcon />
+            <Avatar
+              src={profile?.profilePicture ? `${BACKEND_URL}${profile.profilePicture}` : undefined}
+              sx={{ bgcolor: "#e8edff", color: "#4056c9", width: 48, height: 48 }}
+            >
+              {!profile?.profilePicture && <PersonRoundedIcon />}
             </Avatar>
             <Box>
               <Typography variant="h4" fontWeight={800} sx={{ color: "#172554" }}>
@@ -176,6 +210,70 @@ export default function ProfilePage() {
                 <Stack spacing={2.5}>
                   {editing ? (
                     <>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Box
+                          component="label"
+                          sx={{
+                            position: "relative",
+                            display: "inline-flex",
+                            cursor: "pointer",
+                            borderRadius: "50%",
+                            overflow: "hidden",
+                            "&:hover .profile-picture-overlay": {
+                              opacity: 1,
+                            },
+                          }}
+                        >
+                          <Avatar
+                            src={
+                              picturePreview ||
+                              (profile.profilePicture
+                                ? `${BACKEND_URL}${profile.profilePicture}`
+                                : undefined)
+                            }
+                            sx={{ width: 86, height: 86, bgcolor: "#e8edff", color: "#4056c9" }}
+                          >
+                            {!picturePreview && !profile.profilePicture && <PersonRoundedIcon />}
+                          </Avatar>
+                          <Box
+                            className="profile-picture-overlay"
+                            sx={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "grid",
+                              placeItems: "center",
+                              bgcolor: "rgba(15, 23, 42, 0.58)",
+                              color: "white",
+                              opacity: 0,
+                              transition: "opacity 0.2s ease",
+                            }}
+                          >
+                            <CameraAltRoundedIcon />
+                          </Box>
+                          <input
+                            hidden
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              event.target.value = "";
+                              if (!file) return;
+                              if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+                                setError("Use a JPG, PNG, WEBP, or GIF image.");
+                                return;
+                              }
+                              if (file.size > 5 * 1024 * 1024) {
+                                setError("Profile pictures must be 5 MB or smaller.");
+                                return;
+                              }
+                              setSelectedProfilePicture(file);
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          
+                        </Typography>
+                      </Stack>
                       <TextField
                         label="Name"
                         fullWidth

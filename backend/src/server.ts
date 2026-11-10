@@ -88,6 +88,10 @@ app.use(
   "/uploads",
   express.static(path.resolve(process.cwd(), "uploads")),
 );
+app.use(
+  "/profilePictures",
+  express.static(path.resolve(process.cwd(), "profilePictures")),
+);
 
 // Database health check
 app.get("/", async (req, res) => {

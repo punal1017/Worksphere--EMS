@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Avatar,
@@ -29,6 +29,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
 const SIDEBAR_WIDTH = 250;
 const COLLAPSED_WIDTH = 76;
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const navigationItems = [
   { title: "Dashboard", route: "/dashboard", icon: <DashboardRoundedIcon />, roles: ["ADMIN", "HR", "EMPLOYEE"] },
@@ -39,6 +40,7 @@ const navigationItems = [
 type StoredUser = {
   name?: string;
   role?: string;
+  profilePicture?: string | null;
 };
 
 export default function AppSidebar() {
@@ -46,7 +48,7 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user] = useState<StoredUser>(() => {
+  const [user, setUser] = useState<StoredUser>(() => {
     if (typeof window === "undefined") return {};
 
     try {
@@ -55,6 +57,19 @@ export default function AppSidebar() {
       return {};
     }
   });
+
+  useEffect(() => {
+    const refreshUser = () => {
+      try {
+        setUser(JSON.parse(localStorage.getItem("currentUser") || "{}") as StoredUser);
+      } catch {
+        setUser({});
+      }
+    };
+
+    window.addEventListener("worksphere-profile-updated", refreshUser);
+    return () => window.removeEventListener("worksphere-profile-updated", refreshUser);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -185,8 +200,11 @@ export default function AppSidebar() {
             alignItems="center"
             justifyContent={collapsed ? "center" : "flex-start"}
           >
-          <Avatar sx={{ width: 38, height: 38, bgcolor: "#dbeafe", color: "#1d4ed8" }}>
-            {(user.name || "U").charAt(0).toUpperCase()}
+          <Avatar
+            src={user.profilePicture ? `${BACKEND_URL}${user.profilePicture}` : undefined}
+            sx={{ width: 38, height: 38, bgcolor: "#dbeafe", color: "#1d4ed8" }}
+          >
+            {!user.profilePicture && (user.name || "U").charAt(0).toUpperCase()}
           </Avatar>
           {!collapsed && (
             <Typography variant="body2" fontWeight={700} color="#172554" noWrap>

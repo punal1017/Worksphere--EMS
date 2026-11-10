@@ -5,10 +5,17 @@ import { randomUUID } from "crypto";
 
 // Local folder where images will be stored
 const uploadDirectory = path.resolve(process.cwd(), "uploads");
+const profilePicturesDirectory = path.resolve(
+  process.cwd(),
+  "profilePictures",
+);
 
 // Create uploads folder if it does not exist
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory, { recursive: true });
+}
+if (!fs.existsSync(profilePicturesDirectory)) {
+  fs.mkdirSync(profilePicturesDirectory, { recursive: true });
 }
 
 // Configure where and how files will be saved
@@ -53,3 +60,21 @@ const upload = multer({
 });
 
 export const uploadPostImage = upload.single("image");
+
+const profilePictureStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, profilePicturesDirectory);
+  },
+  filename: (_req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, `${randomUUID()}${extension}`);
+  },
+});
+
+const profilePictureUpload = multer({
+  storage: profilePictureStorage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+export const uploadProfilePicture = profilePictureUpload.single("profilePicture");

@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
+import fs from "fs/promises";
 import { sendPasswordResetEmail } from "../config/mailer";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,6 +65,7 @@ export const login = async (req: any, res: any) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (error) {
@@ -199,6 +201,7 @@ export const getProfile = async (req: any, res: any) => {
         dateOfBirth: true,
         address: true,
         phoneNumber: true,
+        profilePicture: true,
       },
     });
 
@@ -231,6 +234,15 @@ export const updateProfile = async (req: any, res: any) => {
       return res.status(400).json({ message: "Invalid date of birth" });
     }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePicture: true },
+    });
+    if (!existingUser) {
+      if (req.file) await fs.unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -241,6 +253,9 @@ export const updateProfile = async (req: any, res: any) => {
           typeof phoneNumber === "string" && phoneNumber.trim()
             ? phoneNumber.trim()
             : null,
+        profilePicture: req.file
+          ? `/profilePictures/${req.file.filename}`
+          : undefined,
       },
       select: {
         id: true,
@@ -251,12 +266,18 @@ export const updateProfile = async (req: any, res: any) => {
         dateOfBirth: true,
         address: true,
         phoneNumber: true,
+        profilePicture: true,
       },
     });
+
+    if (req.file && existingUser.profilePicture?.startsWith("/profilePictures/")) {
+      await fs.unlink(`${process.cwd()}${existingUser.profilePicture}`).catch(() => {});
+    }
 
     return res.json({ message: "Profile updated successfully", user });
   } catch (error) {
     console.error(error);
+    if (req.file) await fs.unlink(req.file.path).catch(() => {});
     return res.status(500).json({ message: "Failed to update profile" });
   }
 };
