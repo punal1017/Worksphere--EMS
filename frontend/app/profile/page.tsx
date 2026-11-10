@@ -19,6 +19,7 @@ import {
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import AppSidebar from "../../components/AppSidebar";
 import { useProtectedRoute } from "../../components/ProtectedRoute";
+import CalendarDateField from "../../components/CalendarDateField";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -187,13 +188,10 @@ export default function ProfilePage() {
                         value={profile.email}
                         disabled
                       />
-                      <TextField
+                      <CalendarDateField
                         label="Date of birth"
-                        type="date"
-                        fullWidth
                         value={form.dateOfBirth}
-                        onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
-                        slotProps={{ inputLabel: { shrink: true } }}
+                        onChange={(dateOfBirth) => setForm({ ...form, dateOfBirth })}
                       />
                       <TextField
                         label="Address"

@@ -34,6 +34,7 @@ TableRow,
 TextField,
 Typography,
 } from "@mui/material";
+import CalendarDateField from "../../components/CalendarDateField";
 import {
 Add,
 CheckCircleOutlineOutlined as CheckCircleOutline,
@@ -779,24 +780,18 @@ borderRadius: 2.5,
           </Select>
         </FormControl>
 
-        <TextField
+        <CalendarDateField
           label="Start date"
-          type="date"
           value={startDate}
-          onChange={(event) => setStartDate(event.target.value)}
-          fullWidth
-          slotProps={{ inputLabel: { shrink: true } }}
-          inputProps={{ min: new Date().toISOString().slice(0, 10) }}
+          onChange={setStartDate}
+          minDate={new Date().toISOString().slice(0, 10)}
         />
 
-        <TextField
+        <CalendarDateField
           label="End date"
-          type="date"
           value={endDate}
-          onChange={(event) => setEndDate(event.target.value)}
-          fullWidth
-          slotProps={{ inputLabel: { shrink: true } }}
-          inputProps={{ min: startDate || new Date().toISOString().slice(0, 10) }}
+          onChange={setEndDate}
+          minDate={startDate || new Date().toISOString().slice(0, 10)}
         />
 
         <TextField

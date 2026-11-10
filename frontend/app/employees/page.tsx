@@ -731,6 +731,7 @@ import {
 import { useRouter } from 'next/navigation';
 import AppSidebar from '../../components/AppSidebar';
 import { useProtectedRoute } from '../../components/ProtectedRoute';
+import CalendarDateField from '../../components/CalendarDateField';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -1439,15 +1440,10 @@ export default function EmployeesPage() {
               <MenuItem value="HR">HR</MenuItem>
             </TextField>
 
-            <TextField
+            <CalendarDateField
               label="Date of birth"
-              type="date"
-              fullWidth
               value={form.dateOfBirth}
-              onChange={(event) =>
-                setForm({ ...form, dateOfBirth: event.target.value })
-              }
-              slotProps={{ inputLabel: { shrink: true } }}
+              onChange={(dateOfBirth) => setForm({ ...form, dateOfBirth })}
             />
 
             <TextField

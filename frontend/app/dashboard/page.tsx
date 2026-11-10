@@ -1042,20 +1042,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  LinearProgress,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip as ChartTooltip,
-} from "recharts";
-
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
@@ -1065,6 +1057,7 @@ import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { useProtectedRoute } from "../../components/ProtectedRoute";
+import CalendarDateField from "../../components/CalendarDateField";
 import HRPostsSection from "../../components/HRPostsSection";
 
 type Role = "ADMIN" | "HR" | "EMPLOYEE";
@@ -1092,12 +1085,6 @@ type AttendanceSummary = {
     ABSENT: number;
     ON_LEAVE: number;
   };
-};
-
-const attendanceColors = {
-  PRESENT: "#16a34a",
-  ABSENT: "#ef4444",
-  ON_LEAVE: "#f59e0b",
 };
 
 const getLocalDateValue = () => {
@@ -1672,14 +1659,10 @@ export default function DashboardPage() {
                         : "Company attendance for the selected date"}
                     </Typography>
                   </Box>
-                  <TextField
-                    type="date"
+                  <CalendarDateField
                     label="Date"
-                    size="small"
                     value={selectedDate}
-                    onChange={(event) => setSelectedDate(event.target.value)}
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    sx={{ minWidth: { sm: 155 } }}
+                    onChange={setSelectedDate}
                   />
                 </Stack>
 
@@ -1691,59 +1674,115 @@ export default function DashboardPage() {
                   <Alert severity="error">{attendanceError}</Alert>
                 ) : attendanceSummary?.total ? (
                   <>
-                    <Box sx={{ width: "100%", height: 250 }}>
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { name: "Present", value: attendanceSummary.present, key: "PRESENT" },
-                              { name: "Absent", value: attendanceSummary.absent, key: "ABSENT" },
-                              { name: "On leave", value: attendanceSummary.onLeave, key: "ON_LEAVE" },
-                            ]}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={58}
-                            outerRadius={88}
-                            paddingAngle={2}
-                          >
-                            {(["PRESENT", "ABSENT", "ON_LEAVE"] as const).map((key) => (
-                              <Cell key={key} fill={attendanceColors[key]} />
-                            ))}
-                          </Pie>
-                          <ChartTooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </Box>
-                    <Stack spacing={1} sx={{ mt: 1 }}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                        gap: 1.5,
+                      }}
+                    >
                       {[
-                        ["PRESENT", "Present", attendanceSummary.present],
-                        ["ABSENT", "Absent", attendanceSummary.absent],
-                        ["ON_LEAVE", "On leave", attendanceSummary.onLeave],
-                      ].map(([key, label, value]) => (
-                        <Stack
-                          key={key}
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Box
+                        {
+                          key: "PRESENT" as const,
+                          label: "PRESENT",
+                          value: attendanceSummary.present,
+                          color: "success" as const,
+                          accent: "#16a34a",
+                        },
+                        {
+                          key: "ABSENT" as const,
+                          label: "ABSENT",
+                          value: attendanceSummary.absent,
+                          color: "error" as const,
+                          accent: "#dc2626",
+                        },
+                        {
+                          key: "ON_LEAVE" as const,
+                          label: "ON LEAVE",
+                          value: attendanceSummary.onLeave,
+                          color: "warning" as const,
+                          accent: "#f59e0b",
+                        },
+                      ].map(({ key, label, value, color, accent }) => {
+                        const percentage = Math.round(
+                          (value / attendanceSummary.total) * 100,
+                        );
+
+                        return (
+                          <Box
+                            key={key}
+                            sx={{
+                              p: { xs: 2, sm: 2.25 },
+                              border: "1px solid #e2e8f0",
+                              borderRadius: 3,
+                              bgcolor: "#fff",
+                              boxShadow: "0 4px 14px rgba(15, 23, 42, 0.05)",
+                              minHeight: 156,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "stretch",
+                              position: "relative",
+                              overflow: "hidden",
+                              "&::before": {
+                                content: '""',
+                                position: "absolute",
+                                inset: "0 0 auto",
+                                height: 4,
+                                bgcolor: accent,
+                              },
+                            }}
+                          >
+                            <Stack
+                              spacing={0.75}
+                              alignItems="center"
+                              sx={{ textAlign: "center", flex: 1, pt: 0.5 }}
+                            >
+                              <Typography
+                                variant="overline"
+                                fontWeight={800}
+                                letterSpacing={0.8}
+                                color="#64748b"
+                                sx={{ lineHeight: 1.2 }}
+                              >
+                                {label}
+                              </Typography>
+                              <Typography
+                                variant="h3"
+                                fontWeight={800}
+                                color="#0f172a"
+                                sx={{ lineHeight: 1.1 }}
+                              >
+                                {value}
+                              </Typography>
+                            </Stack>
+                            <LinearProgress
+                              variant="determinate"
+                              value={percentage}
+                              color={color}
                               sx={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: "50%",
-                                bgcolor: attendanceColors[key as keyof typeof attendanceColors],
+                                height: 7,
+                                borderRadius: 99,
+                                mt: 1.5,
+                                mb: 1,
+                                bgcolor: `${accent}18`,
+                                "& .MuiLinearProgress-bar": {
+                                  bgcolor: accent,
+                                  borderRadius: 99,
+                                },
                               }}
                             />
-                            <Typography variant="body2">{label}</Typography>
-                          </Stack>
-                          <Typography variant="body2" fontWeight={700}>
-                            {value} ({Math.round((Number(value) / attendanceSummary.total) * 100)}%)
-                          </Typography>
-                        </Stack>
-                      ))}
-                    </Stack>
+                            <Typography
+                              variant="caption"
+                              color="#64748b"
+                              fontWeight={600}
+                              sx={{ display: "block", textAlign: "center", lineHeight: 1.2 }}
+                            >
+                              {percentage}% of {attendanceSummary.total} people
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                    </Box>
                   </>
                 ) : (
                   <Box sx={{ display: "grid", placeItems: "center", minHeight: 260 }}>
