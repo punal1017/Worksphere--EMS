@@ -11,6 +11,10 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Snackbar,
   Stack,
@@ -24,6 +28,8 @@ import ThumbDownAltOutlinedIcon from "@mui/icons-material/ThumbDownAltOutlined";
 import ThumbDownAltRoundedIcon from "@mui/icons-material/ThumbDownAltRounded";
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
 import ThumbUpAltRoundedIcon from "@mui/icons-material/ThumbUpAltRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 
 type Role = "ADMIN" | "HR" | "EMPLOYEE";
 type Reaction = "LIKE" | "DISLIKE" | null;
@@ -107,6 +113,11 @@ export default function HRPostsSection() {
     null,
   );
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState<string | number | null>(null);
 
   const handleUnauthorized = useCallback(() => {
     localStorage.removeItem("accessToken");
@@ -246,6 +257,51 @@ export default function HRPostsSection() {
     }
   };
 
+  const openEditDialog = (post: Post) => {
+    setEditingPost(post);
+    setEditContent(post.content || "");
+    setEditImage(null);
+  };
+
+  const handleUpdatePost = async () => {
+    if (!editingPost || (!editContent.trim() && !editingPost.imageUrl && !editImage)) {
+      setFeedback({ severity: "error", message: "Add some text or an image before saving." });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("content", editContent.trim());
+    if (editImage) formData.append("image", editImage);
+
+    setSavingEdit(true);
+    try {
+      await axios.patch(`${API_URL}/posts/${editingPost.id}`, formData, {
+        headers: getHeaders(),
+      });
+      setEditingPost(null);
+      setFeedback({ severity: "success", message: "Post updated successfully." });
+      await fetchPosts();
+    } catch (requestError) {
+      setFeedback({ severity: "error", message: getErrorMessage(requestError, "Could not update the post.") });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeletePost = async (post: Post) => {
+    if (!window.confirm("Delete this post? This action cannot be undone.")) return;
+    setDeletingPostId(post.id);
+    try {
+      await axios.delete(`${API_URL}/posts/${post.id}`, { headers: getHeaders() });
+      setPosts((currentPosts) => currentPosts.filter((currentPost) => currentPost.id !== post.id));
+      setFeedback({ severity: "success", message: "Post deleted successfully." });
+    } catch (requestError) {
+      setFeedback({ severity: "error", message: getErrorMessage(requestError, "Could not delete the post.") });
+    } finally {
+      setDeletingPostId(null);
+    }
+  };
+
   return (
     <Stack spacing={2.5}>
       {role === "HR" && (
@@ -321,6 +377,26 @@ export default function HRPostsSection() {
                     {post.author.role} · {formattedDate(post.createdAt)}
                   </Typography>
                 </Box>
+                {role === "HR" && (
+                  <Stack direction="row" spacing={0.25} sx={{ ml: "auto" }}>
+                    <Tooltip title="Edit post">
+                      <IconButton size="small" onClick={() => openEditDialog(post)} aria-label="Edit post">
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete post">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => void handleDeletePost(post)}
+                        disabled={deletingPostId === post.id}
+                        aria-label="Delete post"
+                      >
+                        {deletingPostId === post.id ? <CircularProgress size={18} /> : <DeleteOutlineRoundedIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                )}
               </Stack>
               {post.content && <Typography sx={{ mt: 2, whiteSpace: "pre-wrap" }}>{post.content}</Typography>}
               {post.imageUrl && (
@@ -352,6 +428,45 @@ export default function HRPostsSection() {
           </Card>
         ))
       )}
+
+      <Dialog open={Boolean(editingPost)} onClose={() => !savingEdit && setEditingPost(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Edit post</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            multiline
+            minRows={4}
+            value={editContent}
+            onChange={(event) => setEditContent(event.target.value)}
+            sx={{ mt: 1 }}
+          />
+          <Button component="label" variant="outlined" startIcon={<AddPhotoAlternateOutlinedIcon />} sx={{ mt: 2, textTransform: "none" }}>
+            Replace image
+            <input
+              hidden
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
+                  setFeedback({ severity: "error", message: "Use a JPG, PNG, WEBP, or GIF image up to 5 MB." });
+                  return;
+                }
+                setEditImage(file);
+              }}
+            />
+          </Button>
+          {editImage && <Typography variant="caption" sx={{ ml: 1 }}>{editImage.name}</Typography>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setEditingPost(null)} disabled={savingEdit}>Cancel</Button>
+          <Button variant="contained" onClick={() => void handleUpdatePost()} disabled={savingEdit}>
+            {savingEdit ? <CircularProgress size={20} color="inherit" /> : "Save changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={Boolean(feedback)} autoHideDuration={4500} onClose={() => setFeedback(null)}>
         {feedback ? <Alert onClose={() => setFeedback(null)} severity={feedback.severity} variant="filled">{feedback.message}</Alert> : undefined}

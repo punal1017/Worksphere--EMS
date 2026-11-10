@@ -134,6 +134,85 @@ export const getPosts = async (req: Request, res: Response) => {
   }
 };
 
+// UPDATE POST (HR only)
+export const updatePost = async (req: Request, res: Response) => {
+  try {
+    const currentUser = (req as any).user;
+    if (currentUser.role !== "HR") {
+      if (req.file) await fs.unlink(req.file.path).catch(() => {});
+      return res.status(403).json({ message: "Only HR can edit posts." });
+    }
+
+    const postId = Number(req.params.postId);
+    if (!Number.isInteger(postId) || postId <= 0) {
+      if (req.file) await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ message: "Invalid post ID." });
+    }
+
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post) {
+      if (req.file) await fs.unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ message: "Post not found." });
+    }
+
+    const content = typeof req.body.content === "string"
+      ? req.body.content.trim()
+      : post.content;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : post.imageUrl;
+
+    if (!content && !imageUrl) {
+      if (req.file) await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ message: "Please provide text or an image." });
+    }
+
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: { content: content || null, imageUrl },
+      include: {
+        author: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    if (req.file && post.imageUrl?.startsWith("/uploads/")) {
+      await fs.unlink(`${process.cwd()}${post.imageUrl}`).catch(() => {});
+    }
+
+    return res.json({ message: "Post updated successfully.", post: updatedPost });
+  } catch (error) {
+    console.error("Update post error:", error);
+    if (req.file) await fs.unlink(req.file.path).catch(() => {});
+    return res.status(500).json({ message: "Could not update post." });
+  }
+};
+
+// DELETE POST (HR only)
+export const deletePost = async (req: Request, res: Response) => {
+  try {
+    const currentUser = (req as any).user;
+    if (currentUser.role !== "HR") {
+      return res.status(403).json({ message: "Only HR can delete posts." });
+    }
+
+    const postId = Number(req.params.postId);
+    if (!Number.isInteger(postId) || postId <= 0) {
+      return res.status(400).json({ message: "Invalid post ID." });
+    }
+
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post) return res.status(404).json({ message: "Post not found." });
+
+    await prisma.post.delete({ where: { id: postId } });
+    if (post.imageUrl?.startsWith("/uploads/")) {
+      await fs.unlink(`${process.cwd()}${post.imageUrl}`).catch(() => {});
+    }
+
+    return res.json({ message: "Post deleted successfully." });
+  } catch (error) {
+    console.error("Delete post error:", error);
+    return res.status(500).json({ message: "Could not delete post." });
+  }
+};
+
 
 // LIKE / DISLIKE POST
 export const togglePostReaction = async (req: Request, res: Response) => {

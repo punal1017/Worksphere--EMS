@@ -3,7 +3,9 @@ import { Router } from "express";
 
 import {
   createPost,
+  deletePost,
   getPosts,
+  updatePost,
   togglePostReaction,
 } from "../controllers/postController";
 
@@ -27,5 +29,7 @@ router.get(
   getPosts,
 );
 
+router.patch("/:postId", authMiddleware, uploadPostImage, updatePost);
+router.delete("/:postId", authMiddleware, deletePost);
 router.patch("/:postId/reaction", authMiddleware, togglePostReaction);
 export default router;
