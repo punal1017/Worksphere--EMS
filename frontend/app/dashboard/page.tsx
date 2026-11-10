@@ -1065,6 +1065,7 @@ import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { useProtectedRoute } from "../../components/ProtectedRoute";
+import HRPostsSection from "../../components/HRPostsSection";
 
 type Role = "ADMIN" | "HR" | "EMPLOYEE";
 
@@ -1754,16 +1755,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card elevation={0} sx={{ border: "1px solid #e5eaf2", borderRadius: 3 }}>
-              <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
-                <Typography variant="h6" fontWeight={800} color="#172554">
-                  HR Posts
-                </Typography>
-                <Typography color="text.secondary" sx={{ mt: 1 }}>
-                  Company updates and announcements will appear here.
-                </Typography>
-              </CardContent>
-            </Card>
+            <HRPostsSection />
           </Box>
         </Stack>
       </Box>

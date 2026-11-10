@@ -1,12 +1,75 @@
+// import express from "express";
+// import prisma from "./config/prisma";
+// const app = express();
+// import authRoutes from "./routes/authRoutes";
+// import userRoutes from "./routes/userRoutes";
+// import attendanceRoutes from "./routes/attendanceRoutes";
+// import leaveRoutes from "./routes/leaveRoutes";
+// import path from "path";
+// app.use(express.json());
+
+// app.use((req, res, next) => {
+//   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+//   res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+//   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+//   if (req.method === "OPTIONS") {
+//     res.sendStatus(204);
+//     return;
+//   }
+
+//   next();
+// });
+
+// app.get("/", async (req, res) => {
+//   try {
+//     await prisma.$queryRaw`SELECT 1`;
+
+//     res.json({
+//       message: "Employee Management API is running",
+//       database: "Connected",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       message: "Database connection failed",
+//     });
+//   }
+// });
+// app.use(
+//   "/uploads",
+//   express.static(path.resolve(process.cwd(), "uploads")),
+// );
+// app.use("/api/auth", authRoutes);
+// app.use("/api/users", userRoutes);
+// app.use("/api/attendance", attendanceRoutes);
+// app.use("/api/leaves", leaveRoutes);
+
+// const PORT = 5000;
+
+// app.listen(PORT, () => {
+//   console.log(`Server running on http://localhost:${PORT}`);
+// });
+
+
+
+
+
 import express from "express";
+import path from "path";
 import prisma from "./config/prisma";
-const app = express();
+
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import attendanceRoutes from "./routes/attendanceRoutes";
 import leaveRoutes from "./routes/leaveRoutes";
+import postRoutes from "./routes/postRoutes";
+
+const app = express();
+
+// Middleware
 app.use(express.json());
 
+// CORS configuration
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
   res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
@@ -20,6 +83,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve locally uploaded images
+app.use(
+  "/uploads",
+  express.static(path.resolve(process.cwd(), "uploads")),
+);
+
+// Database health check
 app.get("/", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -35,10 +105,13 @@ app.get("/", async (req, res) => {
   }
 });
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
+app.use("/api/posts", postRoutes);
+
 
 const PORT = 5000;
 

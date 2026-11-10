@@ -11,8 +11,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
-
 model User {
   id       Int    @id @default(autoincrement())
   name     String
@@ -26,21 +24,23 @@ model User {
   updatedAt DateTime @updatedAt
 
   attendance          Attendance[]
-  leaves              Leave[] @relation("LeaveRequester")
-  hrApprovedLeaves    Leave[] @relation("HRApprover")
-  adminApprovedLeaves Leave[] @relation("AdminApprover")
+  leaves              Leave[]      @relation("LeaveRequester")
+  hrApprovedLeaves    Leave[]      @relation("HRApprover")
+  adminApprovedLeaves Leave[]      @relation("AdminApprover")
 
-
-    resetTokenHash   String?   @unique
+  resetTokenHash   String?   @unique
   resetTokenExpiry DateTime?
 
   dateOfBirth DateTime?
   address     String?
   phoneNumber String?
+
+  posts         Post[]         @relation("PostAuthor")
+  postReactions PostReaction[]
 }
 
 model Attendance {
-  id       Int      @id @default(autoincrement())
+  id       Int       @id @default(autoincrement())
   userId   Int
   date     DateTime
   checkIn  DateTime?
@@ -49,19 +49,19 @@ model Attendance {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user     User                @relation(fields: [userId], references: [id])
   sessions AttendanceSession[]
 
   @@unique([userId, date])
 }
 
 model AttendanceSession {
-  id           Int        @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   attendanceId Int
   checkIn      DateTime
   checkOut     DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
 
@@ -79,8 +79,8 @@ model Leave {
 
   status LeaveStatus @default(PENDING_HR)
 
-  hrApprovedBy  Int?
-  hrApprovedAt  DateTime?
+  hrApprovedBy    Int?
+  hrApprovedAt    DateTime?
   adminApprovedBy Int?
   adminApprovedAt DateTime?
 
@@ -90,6 +90,45 @@ model Leave {
   requester     User  @relation("LeaveRequester", fields: [userId], references: [id])
   hrApprover    User? @relation("HRApprover", fields: [hrApprovedBy], references: [id])
   adminApprover User? @relation("AdminApprover", fields: [adminApprovedBy], references: [id])
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  content   String?
+  imageUrl  String?
+
+  authorId  Int
+  author    User     @relation("PostAuthor", fields: [authorId], references: [id])
+
+  reactions PostReaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostReaction {
+  id        Int               @id @default(autoincrement())
+
+  postId    Int
+  userId    Int
+  type      PostReactionType
+
+  post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+enum PostReactionType {
+  LIKE
+  DISLIKE
 }
 
 enum Role {
