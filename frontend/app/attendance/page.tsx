@@ -564,7 +564,7 @@ export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [isEmployee, setIsEmployee] = useState(false);
+  const [hasAttendanceAccess, setHasAttendanceAccess] = useState(false);
   const [message, setMessage] = useState<Message>({
     open: false,
     text: '',
@@ -640,13 +640,13 @@ export default function AttendancePage() {
     try {
       const user = JSON.parse(savedUser);
 
-      if (user.role !== 'EMPLOYEE') {
-        setIsEmployee(false);
+      if (!['EMPLOYEE', 'HR'].includes(user.role)) {
+        setHasAttendanceAccess(false);
         setLoading(false);
         return;
       }
 
-      setIsEmployee(true);
+      setHasAttendanceAccess(true);
       void fetchAttendance();
     } catch {
       router.replace('/signin');
@@ -766,7 +766,7 @@ export default function AttendancePage() {
     boxShadow: 'none',
   };
 
-  if (!isEmployee) {
+  if (!hasAttendanceAccess) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#f5f7fb' }}>
         <AppSidebar />
@@ -778,11 +778,11 @@ export default function AttendancePage() {
             >
               <CardContent sx={{ textAlign: 'center', py: 5 }}>
                 <Typography variant="h5" fontWeight={700} gutterBottom>
-                  Employee Attendance
+                  Attendance
                 </Typography>
                 <Typography color="text.secondary" sx={{ mb: 3 }}>
-                  This page is for employee attendance. Admin and HR attendance
-                  views can be added separately.
+                  Attendance check-in and check-out are available to employees
+                  and HR users.
                 </Typography>
                 <Button
                   variant="contained"
